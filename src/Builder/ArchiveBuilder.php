@@ -15,10 +15,10 @@ namespace Composer\Satis\Builder;
 
 use Composer\Composer;
 use Composer\Downloader\DownloadManager;
-use Composer\Factory;
 use Composer\Package\Archiver\ArchiveManager;
 use Composer\Package\CompletePackage;
 use Composer\Package\PackageInterface;
+use Composer\Satis\VendorOverwrite\ComposerFactory;
 use Composer\Util\Filesystem;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
@@ -39,7 +39,7 @@ class ArchiveBuilder extends Builder
         $endpoint = $this->config['archive']['prefix-url'] ?? $this->config['homepage'];
         $includeArchiveChecksum = (bool) ($this->config['archive']['checksum'] ?? true);
         $composerConfig = $this->composer->getConfig();
-        $factory = new Factory();
+        $factory = new ComposerFactory();
         /* @var DownloadManager $downloadManager */
         $downloadManager = $this->composer->getDownloadManager();
         /* @var ArchiveManager $archiveManager */

@@ -19,6 +19,7 @@ use Composer\IO\ConsoleIO;
 use Composer\IO\IOInterface;
 use Composer\Satis\Console\Command;
 use Composer\Satis\Satis;
+use Composer\Satis\VendorOverwrite\ComposerFactory;
 use Composer\Util\ErrorHandler;
 use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Input\InputInterface;
@@ -60,7 +61,7 @@ class Application extends BaseApplication
     {
         if (null === $this->composer) {
             try {
-                $this->composer = Factory::create($this->io, $config);
+                $this->composer = ComposerFactory::create($this->io, $config);
             } catch (\InvalidArgumentException $e) {
                 $this->io->write($e->getMessage());
                 exit(1);
