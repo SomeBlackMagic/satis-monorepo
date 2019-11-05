@@ -144,25 +144,20 @@ class VcsRepository extends ArrayRepository implements ConfigurableRepositoryInt
             $this->loader = new ArrayLoader($this->versionParser);
         }
 
-//        try {
-//            if ($driver->hasComposerFile($driver->getRootIdentifier())) {
-//                $driver->getComposerInformation($driver->getRootIdentifier());
-//
-//                 // $this->packageName = !empty($data['name']) ? $data['name'] : null;
-//            }
-//        } catch (\Exception $e) {
-//            if ($isVeryVerbose) {
-//                $this->io->writeError('<error>Skipped parsing '.$driver->getRootIdentifier().', '.$e->getMessage().'</error>');
-//            }
-//        }
-
         foreach ($driver->getTags() as $tag => $identifier) {
+            $this->processTag($driver, $tag, $identifier);
+
             $isVerbose = $this->isVerbose;
             $isVeryVerbose = $this->isVeryVerbose;
 
-            $data = $driver->getComposerInformation($tag);
-
-            $this->processTag($driver, $tag, $identifier);
+            try {
+                $data = $driver->getComposerInformation($tag);
+            } catch (\Exception $e) {
+                if ($isVeryVerbose) {
+                    $this->io->writeError('<error>Skipped parsing '.$driver->getRootIdentifier().', '.$e->getMessage().'</error>');
+                }
+                continue;
+            }
 
             if(isset($data['config']['monorepo'])) {
                 foreach ($data['config']['monorepo'] as $name => $path) {
@@ -182,10 +177,33 @@ class VcsRepository extends ArrayRepository implements ConfigurableRepositoryInt
             $this->io->overwriteError('', false);
         }
 
-//        $branches = $driver->getBranches();
-//        foreach ($branches as $branch => $identifier) {
-//            $this->processBranch($driver, $branch, $identifier);
-//        }
+        $branches = $driver->getBranches();
+        foreach ($branches as $branch => $identifier) {
+            $this->processBranch($driver, $branch, $identifier);
+
+            try {
+                $data = $driver->getComposerInformation($branch);
+            } catch (\Exception $e) {
+                if ($isVeryVerbose) {
+                    $this->io->writeError('<error>Skipped parsing '.$driver->getRootIdentifier().', '.$e->getMessage().'</error>');
+                }
+                continue;
+            }
+
+            if(isset($data['config']['monorepo'])) {
+                foreach ($data['config']['monorepo'] as $name => $path) {
+                    $msg = 'Reading composer.json of <info>' . ($this->packageName ?: $this->url) .' in folder '.$path. '</info> (<comment>' . $branch . '</comment>)';
+                    if ($isVeryVerbose) {
+                        $this->io->writeError($msg);
+                    } elseif ($isVerbose) {
+                        $this->io->overwriteError($msg, false);
+                    }
+                    $driver->setBasePath($path . '/');
+                    $this->processBranch($driver, $branch, $identifier);
+                }
+            }
+
+        }
         $driver->cleanup();
 
         if (!$isVeryVerbose) {
