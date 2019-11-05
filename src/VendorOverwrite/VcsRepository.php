@@ -331,16 +331,16 @@ class VcsRepository extends ArrayRepository implements ConfigurableRepositoryInt
             $version = $prefix . preg_replace('{(\.9{7})+}', '.x', $parsedBranch);
         }
 
-        $cachedPackage = $this->getCachedPackageVersion($version, $identifier, $isVerbose, $isVeryVerbose);
-        if ($cachedPackage) {
-            $this->addPackage($cachedPackage);
-
-            return false;
-        } elseif ($cachedPackage === false) {
-            $this->emptyReferences[] = $identifier;
-
-            return false;
-        }
+//        $cachedPackage = $this->getCachedPackageVersion($version, $identifier, $isVerbose, $isVeryVerbose);
+//        if ($cachedPackage) {
+//            $this->addPackage($cachedPackage);
+//
+//            return false;
+//        } elseif ($cachedPackage === false) {
+//            $this->emptyReferences[] = $identifier;
+//
+//            return false;
+//        }
 
         try {
             if (!$data = $driver->getComposerInformation($identifier)) {
@@ -359,6 +359,9 @@ class VcsRepository extends ArrayRepository implements ConfigurableRepositoryInt
                 $this->io->writeError('Importing branch '.$branch.' ('.$data['version'].')');
             }
 
+            if($driver->getBasePath() !== '') {
+                $data['base_path'] = $driver->getBasePath();
+            }
             $packageData = $this->preProcess($driver, $data, $identifier);
             $package = $this->loader->load($packageData);
             if ($this->loader instanceof ValidatingArrayLoader && $this->loader->getWarnings()) {
