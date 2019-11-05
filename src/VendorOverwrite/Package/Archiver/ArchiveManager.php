@@ -92,7 +92,7 @@ class ArchiveManager extends \Composer\Package\Archiver\ArchiveManager
         $tempTarget = sys_get_temp_dir().'/composer_archive'.uniqid().'.'.$format;
         $filesystem->ensureDirectoryExists(dirname($tempTarget));
 
-        if($package->getBasePath() !== '') {
+        if(method_exists ($package , 'getBasePath' ) &&  $package->getBasePath() !== '') {
             $archivePath = $usableArchiver->archive($sourcePath.'/'.$package->getBasePath().'/', $tempTarget, $format, $package->getArchiveExcludes(), $ignoreFilters);
         } else {
             $archivePath = $usableArchiver->archive($sourcePath, $tempTarget, $format, $package->getArchiveExcludes(), $ignoreFilters);
