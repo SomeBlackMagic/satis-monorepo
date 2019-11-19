@@ -151,6 +151,7 @@ class VcsRepository extends ArrayRepository implements ConfigurableRepositoryInt
             $isVeryVerbose = $this->isVeryVerbose;
 
             try {
+                $driver->setBasePath('');
                 $data = $driver->getComposerInformation($tag);
             } catch (\Exception $e) {
                 if ($isVeryVerbose) {
