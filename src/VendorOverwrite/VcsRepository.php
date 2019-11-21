@@ -180,6 +180,7 @@ class VcsRepository extends ArrayRepository implements ConfigurableRepositoryInt
 
         $branches = $driver->getBranches();
         foreach ($branches as $branch => $identifier) {
+            $driver->setBasePath('');
             $this->processBranch($driver, $branch, $identifier);
 
             try {
