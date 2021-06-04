@@ -1,0 +1,18 @@
+{
+    "name": "common",
+    "homepage": "https://satis.hostname.net",
+    "repositories": [
+        {
+            "type": "git+monorepo",
+            "url": "https://user@git-server/modules.git"
+        }
+    ],
+    "require-all": true,
+    "require-dependencies": true,
+    "require-dev-dependencies": true,
+    "archive": {
+        "directory": "dist",
+        "format": "tar",
+        "skip-dev": false
+    }
+}

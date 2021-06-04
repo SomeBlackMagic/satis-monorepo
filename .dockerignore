@@ -6,6 +6,7 @@
 !res
 !src
 !views
+!.docker
 
 # unignored files
 !composer.json

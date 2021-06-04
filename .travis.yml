@@ -1,39 +1,64 @@
-language: php
-dist: xenial
-
-cache:
-  directories:
-    - $HOME/.composer
-    - vendor
-
-git:
-  depth: 5
-
-php:
-  - 7.2
-  - 7.3
-  - 7.4snapshot
-  - nightly
-
+##################################################
+## Prerequisites:
+## - $DOCKER_USERNAME and $DOCKER_PASSWORD must
+##   be set in the project settings in Travis-CI
+##   and their values must be properly escaped
+##   for bash.
+## - $DOCKERHUB_ORGANIZATION must be set in the
+##   project settings in Travis-CI. This should
+##   be the organization or user to use for
+##   publishing images.
+##################################################
+sudo: required
+language: bash
+services:
+  - docker
 env:
-  matrix:
-    - COMPOSER_FLAGS="--prefer-lowest"
-    - COMPOSER_FLAGS=""
+  global:
+    - DOCKERHUB_ORGANIZATION=someblackmagic
+    - APP_NAME=satis-monorepo
+    # Used for specifying the build context relative to this file
+    # Likely, this is "."
+    - CONTEXT_RELATIVE_PATH=.
 
-matrix:
-  fast_finish: true
-  allow_failures:
-    - php: nightly
-    - php: 7.4snapshot
+    # Relative path from $CONTEXT_RELATIVE_PATH to target Dockerfile
+    # Examples: "src/App/Dockerfile", "Dockerfile"
+    - DOCKERFILE_RELATIVE_PATH=.docker/Dockerfile
 
-before_install:
-  - travis_retry composer self-update
+    # Image name and tag used for CI only
+    - CI_IMAGE=${APP_NAME}:ci #DO NOT CHANGE
 
-install:
-  - travis_retry composer update --no-interaction --no-progress --prefer-dist $COMPOSER_FLAGS
+    # Published image base name (user/image) without tag
+    # Correct tag is added later
+    - BASE_IMAGE=${DOCKERHUB_ORGANIZATION}/${APP_NAME} #DO NOT CHANGE
 
 script:
-  - vendor/bin/phpunit --coverage-text --coverage-clover coverage.xml
-
+  - docker build -t $CI_IMAGE -f $DOCKERFILE_RELATIVE_PATH $CONTEXT_RELATIVE_PATH
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+  # Tag pull request builds with ":pr-XXX" where "XXX" is the pull request number
+  - |
+    if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then
+      echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+      docker tag $CI_IMAGE ${DOCKERHUB_ORGANIZATION}/${APP_NAME}:pr-${TRAVIS_PULL_REQUEST};
+      docker push ${DOCKERHUB_ORGANIZATION}/${APP_NAME}:pr-${TRAVIS_PULL_REQUEST}
+    fi
+  # Tag git tag builds with the git tag
+  - |
+    if [ -n "$TRAVIS_TAG" ]; then
+      echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+      docker tag $CI_IMAGE ${DOCKERHUB_ORGANIZATION}/${APP_NAME}:${TRAVIS_TAG}
+      docker push ${DOCKERHUB_ORGANIZATION}/${APP_NAME}:${TRAVIS_TAG}
+    fi
+  # Tag pushes on master with ":latest"
+  - |
+    if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then
+      echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+      docker tag $CI_IMAGE ${DOCKERHUB_ORGANIZATION}/${APP_NAME}:latest
+      docker push ${DOCKERHUB_ORGANIZATION}/${APP_NAME}:latest
+      docker run -v $PWD:/workspace \
+        -e DOCKERHUB_USERNAME=$DOCKER_USERNAME \
+        -e DOCKERHUB_PASSWORD=$DOCKER_PASSWORD \
+        -e DOCKERHUB_REPOSITORY=${DOCKERHUB_ORGANIZATION}/${APP_NAME} \
+        -e README_FILEPATH='/workspace/.docker/dockerhub.md' \
+        peterevans/dockerhub-description:2.1.0
+    fi
